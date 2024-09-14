@@ -45,30 +45,4 @@ public class app {
             ex.printStackTrace();
         }
     }
-
-    // handling user choice
-    private static void goToChoice(int choice)
-            throws IOException, LineUnavailableException, UnsupportedAudioFileException
-    {
-        switch (choice){
-            case 1:
-                myMusicPlayer.pause();
-                break;
-            case 2:
-                myMusicPlayer.resumeAudio();
-                break;
-            case 3:
-                myMusicPlayer.restart();
-                break;
-            case 4:
-                myMusicPlayer.stop();
-                break;
-            case 5:
-                System.out.println("Enter time (" + 0 + ", " + myMusicPlayer.clip.getMicrosecondLength() + ")");
-                Scanner scan = new Scanner(System.in);
-                long time = scan.nextLong();
-                myMusicPlayer.jump(time);
-                break;
-        }
-    }
 }

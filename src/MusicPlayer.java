@@ -1,21 +1,23 @@
 import java.io.File;
 import java.io.IOException;
-
 import javax.sound.sampled.*;
-import javax.swing.event.ChangeEvent;
 
 public class MusicPlayer {
     // current position
     Long currentFrame;
     Clip clip;
+
+    // volume
     FloatControl musicGainControl;
     float currentMusicVolume;
 
     // status of clip
-    String status;
+    public String status;
 
+    // create audio input stream
     AudioInputStream audioInputStream;
 
+    // create filePath
     private String filePath;
 
     // initialize streams and clip
@@ -31,7 +33,6 @@ public class MusicPlayer {
         filePath = passedFilePath;
         resetAudioStream();
         musicGainControl = (FloatControl) clip.getControl(FloatControl.Type.MASTER_GAIN);
-        float currentMusicVolume = 1;
     }
 
     // play the audio
@@ -59,18 +60,6 @@ public class MusicPlayer {
         }
         clip.stop();
         status = "paused";
-    }
-
-    // resume the audio
-    public void resumeAudio()
-        throws IOException, LineUnavailableException, UnsupportedAudioFileException
-    {
-        if(status.equals("play"))
-        {
-            System.out.println("Audio is already being played");
-            return;
-        }
-        clip.start();
     }
 
     // restart the audio
@@ -109,6 +98,7 @@ public class MusicPlayer {
         }
     }
 
+    // change volume
     public void changeVolume(float newVolume) throws IllegalArgumentException{
         musicGainControl.setValue(newVolume);
         currentMusicVolume = newVolume;

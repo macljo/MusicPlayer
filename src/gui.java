@@ -1,4 +1,3 @@
-import javax.sound.sampled.FloatControl;
 import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.UnsupportedAudioFileException;
 import javax.swing.*;
@@ -21,8 +20,19 @@ public class gui extends JFrame {
         setSize(600, 1000);
         setLocation(750, 0);
         setTitle("Music Player");
-        getContentPane().setLayout(new FlowLayout());
         getContentPane().setBackground(Color.darkGray);
+        JPanel topPanel = new JPanel(new BorderLayout());
+        JPanel middlePanel = new JPanel(new BorderLayout());
+        JPanel bottomPanel = new JPanel(new FlowLayout());
+
+        topPanel.setBackground(Color.darkGray);
+        middlePanel.setBackground(Color.darkGray);
+        bottomPanel.setBackground(Color.darkGray);
+
+        // add different panels to window
+        add(topPanel, BorderLayout.NORTH);
+        add(middlePanel, BorderLayout.CENTER);
+        add(bottomPanel, BorderLayout.SOUTH);
 
         // choose song to play
         JFileChooser fileChoice = new JFileChooser(FileSystemView.getFileSystemView());
@@ -32,41 +42,28 @@ public class gui extends JFrame {
             myMusicPlayer.setFilePath(fileChoice.getSelectedFile().getAbsolutePath());
         }
 
-        // create pause button
-        final JButton pauseButton = new JButton("Pause Song");
-        getContentPane().add(BorderLayout.SOUTH, pauseButton);
+        // create play/pause button
+        //ImageIcon playIcon = new ImageIcon("C:\\Users\\haddo_meecmhc\\Pictures\\musicPlayer\\playButton.png");
+        //ImageIcon pauseIcon = new ImageIcon("C:\\Users\\haddo_meecmhc\\Pictures\\musicPlayer\\pauseButton.png");
 
-        // when user clicks button a choice is made
-        pauseButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                myMusicPlayer.pause();
+        ImageIcon playIcon = new ImageIcon(getClass().getResource("/icons/playButton.png"));
+        ImageIcon pauseIcon = new ImageIcon(getClass().getResource("/icons/pauseButton.png"));
+
+        JButton pausePlayButton = new JButton();
+        pausePlayButton.setIcon(pauseIcon);
+        pausePlayButton.addActionListener(e -> {
+            if (myMusicPlayer.status == "play") {
+                myMusicPlayer.pause(); // Pause the audio
+                pausePlayButton.setIcon(playIcon);
+            } else {
+                myMusicPlayer.play(); // Play or resume the audio
+                pausePlayButton.setIcon(pauseIcon);
             }
         });
 
-        // create resume button
-        final JButton resumeButton = new JButton("Resume Song");
-        getContentPane().add(BorderLayout.SOUTH, resumeButton);
-
-        // when user clicks button a choice is made
-        resumeButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                try {
-                    myMusicPlayer.resumeAudio();
-                } catch (IOException ex) {
-                    throw new RuntimeException(ex);
-                } catch (LineUnavailableException ex) {
-                    throw new RuntimeException(ex);
-                } catch (UnsupportedAudioFileException ex) {
-                    throw new RuntimeException(ex);
-                }
-            }
-        });
 
         // create restart button
         final JButton restartButton = new JButton("Restart Song");
-        getContentPane().add(BorderLayout.SOUTH, restartButton);
 
         // when user clicks button a choice is made
         restartButton.addActionListener(new ActionListener() {
@@ -86,7 +83,6 @@ public class gui extends JFrame {
 
         // create stop button
         final JButton stopButton = new JButton("Stop Song");
-        getContentPane().add(BorderLayout.SOUTH, stopButton);
 
         // when user clicks button a choice is made
         stopButton.addActionListener(new ActionListener() {
@@ -106,8 +102,7 @@ public class gui extends JFrame {
 
         // create jump button
         final JTextField jumpButton = new JTextField(20);
-        getContentPane().add(jumpButton);
-        //getContentPane().add(BorderLayout.SOUTH, jumpButton);
+        //getContentPane().add(jumpButton);
 
         //  when user enters text choice is made
         jumpButton.getDocument().addDocumentListener(new DocumentListener() {
@@ -159,7 +154,6 @@ public class gui extends JFrame {
 
         volume.setPaintTrack(true);
         volume.setPaintTicks(true);
-        //volume.setPaintLabels(true);
 
         volume.setMajorTickSpacing(10);
         volume.setMinorTickSpacing(5);
@@ -177,7 +171,11 @@ public class gui extends JFrame {
                 }
             }
         });
-        getContentPane().add(volume);
+
+        topPanel.add(stopButton, BorderLayout.CENTER);
+        middlePanel.add(volume, BorderLayout.SOUTH);
+        bottomPanel.add(pausePlayButton);
+        bottomPanel.add(restartButton);
 
         setVisible(true);
     }
