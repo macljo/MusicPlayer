@@ -3,16 +3,16 @@ import javax.sound.sampled.UnsupportedAudioFileException;
 import javax.swing.*;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
-import javax.swing.event.DocumentEvent;
-import javax.swing.event.DocumentListener;
-import javax.swing.filechooser.FileSystemView;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.File;
 import java.io.IOException;
 
-public class gui extends JFrame {
+public class gui extends JFrame implements ProgressListener {
     MusicPlayer myMusicPlayer;
+    JLabel currentSongLabel;
+    JProgressBar progressBar;
     public gui(MusicPlayer player) throws UnsupportedAudioFileException, LineUnavailableException, IOException {
         myMusicPlayer = player;
 
@@ -34,17 +34,55 @@ public class gui extends JFrame {
         add(middlePanel, BorderLayout.CENTER);
         add(bottomPanel, BorderLayout.SOUTH);
 
-        // choose song to play
-        JFileChooser fileChoice = new JFileChooser(FileSystemView.getFileSystemView());
-        int r = fileChoice.showSaveDialog(null);
+        // label to show the current song
+        currentSongLabel = new JLabel("No song playing.", JLabel.CENTER);
+        currentSongLabel.setForeground(Color.white);
 
-        if(r == JFileChooser.APPROVE_OPTION){
-            myMusicPlayer.setFilePath(fileChoice.getSelectedFile().getAbsolutePath());
-        }
+        // button to load songs from a folder
+        JButton loadSongsButton = new JButton("Load Songs from Folder");
+        loadSongsButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                JFileChooser fileChooser = new JFileChooser();
+                fileChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY); // only allow folder selection
+                int result = fileChooser.showOpenDialog(middlePanel);
+
+                if (result == JFileChooser.APPROVE_OPTION) {
+                    File folder = fileChooser.getSelectedFile();
+                    try {
+                        myMusicPlayer.loadSongsFromFolder(folder);
+                    } catch (LineUnavailableException ex) {
+                        throw new RuntimeException(ex);
+                    } catch (InterruptedException ex) {
+                        throw new RuntimeException(ex);
+                    }
+                    //myMusicPlayer.playNextSong();
+                }
+
+            }
+        });
+
+
+
+        // button to play next song
+        ImageIcon playNextIcon = new ImageIcon(getClass().getResource("/icons/skipForward.png"));
+
+        JButton playNextButton = new JButton();
+        playNextButton.setIcon(playNextIcon);
+        playNextButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                try {
+                    myMusicPlayer.playNextSong();
+                } catch (LineUnavailableException ex) {
+                    throw new RuntimeException(ex);
+                } catch (InterruptedException ex) {
+                    throw new RuntimeException(ex);
+                }
+            }
+        });
 
         // create play/pause button
-        //ImageIcon playIcon = new ImageIcon("C:\\Users\\haddo_meecmhc\\Pictures\\musicPlayer\\playButton.png");
-        //ImageIcon pauseIcon = new ImageIcon("C:\\Users\\haddo_meecmhc\\Pictures\\musicPlayer\\pauseButton.png");
 
         ImageIcon playIcon = new ImageIcon(getClass().getResource("/icons/playButton.png"));
         ImageIcon pauseIcon = new ImageIcon(getClass().getResource("/icons/pauseButton.png"));
@@ -100,47 +138,20 @@ public class gui extends JFrame {
             }
         });
 
-        // create jump button
-        final JTextField jumpButton = new JTextField(20);
-        //getContentPane().add(jumpButton);
+        // create check queue button
+        JButton checkQueueButton = new JButton("Check queue");
 
-        //  when user enters text choice is made
-        jumpButton.getDocument().addDocumentListener(new DocumentListener() {
+        // create label to show next song
+        JLabel nextSongLabel = new JLabel("null");
+        nextSongLabel.setForeground(Color.WHITE);
+        nextSongLabel.setVisible(false);
 
+        // when user clicks checkQueueButton
+        checkQueueButton.addActionListener(new ActionListener() {
             @Override
-            public void insertUpdate(DocumentEvent e) {
-                try {
-                    onTextChanged();
-                } catch (UnsupportedAudioFileException ex) {
-                    throw new RuntimeException(ex);
-                } catch (LineUnavailableException ex) {
-                    throw new RuntimeException(ex);
-                } catch (IOException ex) {
-                    throw new RuntimeException(ex);
-                }
-            }
-
-            @Override
-            public void removeUpdate(DocumentEvent e) {
-                try {
-                    onTextChanged();
-                } catch (UnsupportedAudioFileException ex) {
-                    throw new RuntimeException(ex);
-                } catch (LineUnavailableException ex) {
-                    throw new RuntimeException(ex);
-                } catch (IOException ex) {
-                    throw new RuntimeException(ex);
-                }
-            }
-
-            @Override
-            public void changedUpdate(DocumentEvent e) {
-
-            }
-
-            public void onTextChanged() throws UnsupportedAudioFileException, LineUnavailableException, IOException {
-                System.out.println("");
-                myMusicPlayer.jump(Long.parseLong(jumpButton.getText()));
+            public void actionPerformed(ActionEvent e) {
+                nextSongLabel.setText(myMusicPlayer.viewNextSong().toString());
+                nextSongLabel.setVisible(true);
             }
         });
 
@@ -172,12 +183,35 @@ public class gui extends JFrame {
             }
         });
 
+        // create a progress bar with a min of 0 and max of 100
+        progressBar = new JProgressBar(0, 100);
+        progressBar.setValue(0);
+        progressBar.setStringPainted(true);
+
+        // add elements to panels
+        topPanel.add(loadSongsButton, BorderLayout.NORTH);
         topPanel.add(stopButton, BorderLayout.CENTER);
+        topPanel.add(nextSongLabel, BorderLayout.SOUTH);
+        middlePanel.add(progressBar, BorderLayout.NORTH);
+        middlePanel.add(currentSongLabel, BorderLayout.CENTER);
         middlePanel.add(volume, BorderLayout.SOUTH);
         bottomPanel.add(pausePlayButton);
+        bottomPanel.add(playNextButton);
         bottomPanel.add(restartButton);
+        bottomPanel.add(checkQueueButton);
 
         setVisible(true);
+    }
+
+    @Override
+    public void onProgressUpdate(int progress){
+        if (progressBar != null) {
+            progressBar.setValue(progress);  // Update the progress bar
+        }
+    }
+
+    public void setNowPlaying(String myLabel){
+        currentSongLabel.setText(myLabel);
     }
 
 }
