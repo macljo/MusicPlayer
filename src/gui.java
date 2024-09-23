@@ -9,7 +9,7 @@ import java.awt.event.ActionListener;
 import java.io.File;
 import java.io.IOException;
 
-public class gui extends JFrame implements ProgressListener {
+public class gui extends JFrame {
     MusicPlayer myMusicPlayer;
     JLabel currentSongLabel;
     JProgressBar progressBar;
@@ -201,13 +201,6 @@ public class gui extends JFrame implements ProgressListener {
         bottomPanel.add(checkQueueButton);
 
         setVisible(true);
-    }
-
-    @Override
-    public void onProgressUpdate(int progress){
-        if (progressBar != null) {
-            progressBar.setValue(progress);  // Update the progress bar
-        }
     }
 
     public void setNowPlaying(String myLabel){
