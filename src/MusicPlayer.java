@@ -2,6 +2,7 @@ import java.io.File;
 import java.io.IOException;
 import javax.sound.sampled.*;
 import javax.swing.*;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.Objects;
 import java.util.Queue;
@@ -9,6 +10,13 @@ import java.util.Queue;
 public class MusicPlayer {
     // create songQueue
     private static Queue<song> songQueue;
+
+    // create previousSongs and limit the number of songs in previousSongs
+    private LinkedList<song> previousSongs;
+    private static final int maxSongs = 20;
+
+    // create currentSong to track the current song
+    private song currentSong;
 
     // create timer
     private Timer timer;
@@ -30,7 +38,7 @@ public class MusicPlayer {
 
     // create filePath
     private String filePath;
-    private gui GUI;
+    private static gui GUI;
 
     // create LineListener
     private LineListener lineListener = event -> {
@@ -55,6 +63,8 @@ public class MusicPlayer {
 
         // initialize sonqQueue
         songQueue = new LinkedList<>();
+        // initialize previousSongs
+        previousSongs = new LinkedList<>();
 
         // initialize status
         status = "paused";
@@ -63,16 +73,32 @@ public class MusicPlayer {
     public void addGui(gui addedGui) {
         GUI = addedGui;
     }
+
     // add a song to the queue
     public static void addSong(song song) {
         songQueue.offer(song);
         System.out.println(song.getTitle() + " added to the queue.");
+        if(GUI != null){
+            GUI.updateSongQueue(songQueue);
+        }
+    }
+
+    // update previousQueue
+    public void updatePreviousQueueDisplay(){
+        if(GUI != null){
+            GUI.updatePreviousSongQueue(previousSongs);
+        }
     }
 
     // play next song in queue
     public void playNextSong() throws LineUnavailableException, InterruptedException {
         // stop and close current clip if song is playing
         if(clip != null && clip.isRunning()){
+            // before playing next song, add current song to previously played queue
+            if(currentSong != null){
+                addToPreviouslyPlayed(currentSong);
+                updatePreviousQueueDisplay();
+            }
             // temporarily disable the listener
             clip.removeLineListener(lineListener);
             clip.stop();
@@ -81,17 +107,66 @@ public class MusicPlayer {
 
         song nextSong = songQueue.poll();
         if (nextSong != null) {
-            System.out.println("Now playing: " + nextSong);
+            System.out.println("Now playing: " + nextSong.getTitle());
             filePath = nextSong.getAudioFile().getAbsolutePath();
+            currentSong = nextSong;
             playAudio(nextSong);
         } else {
             System.out.println("No more songs in the queue.");
         }
+
+        if(GUI != null){
+            GUI.updateSongQueue(songQueue);
+        }
     }
 
-    // view next song in queue
-    public song viewNextSong() {
-        return songQueue.peek();
+    // play previous song
+    public void playPreviousSong() throws LineUnavailableException, InterruptedException, UnsupportedAudioFileException, IOException {
+        // stop current song before switching
+        if(clip != null && clip.isRunning()){
+            clip.stop();
+            clip.close();
+        }
+
+        // check if there are previously played songs
+        if(!previousSongs.isEmpty()){
+            // get last song played from previous queue
+            song previousSong = previousSongs.removeLast();
+
+            // add current song back to the main queue (if there is a song playing)
+            if(currentSong != null){
+                ((LinkedList<song>) songQueue).addFirst(currentSong);
+            }
+
+            // update current song to play the previous one and play it
+            currentSong = previousSong;
+            System.out.println("Now playing previous song: " + currentSong.getTitle());
+            filePath = currentSong.getAudioFile().getAbsolutePath();
+            playAudio(currentSong);
+        }
+        else{
+            System.out.println("No previous songs available.");
+        }
+
+        if(GUI != null){
+            GUI.updateSongQueue(songQueue);
+            GUI.updatePreviousSongQueue(previousSongs);
+        }
+    }
+
+    // manage the previously played song queue
+    private void addToPreviouslyPlayed(song playedSong){
+        if(playedSong != null){
+            if(previousSongs.size() >= maxSongs){
+                previousSongs.removeFirst();
+            }
+            previousSongs.addLast(playedSong);
+        }
+    }
+
+    // get list of previously playedSongs
+    public LinkedList<song> getPreviouslyPlayedSongs() {
+        return previousSongs;
     }
 
     // load songs from folder

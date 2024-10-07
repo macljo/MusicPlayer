@@ -8,11 +8,18 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
 import java.io.IOException;
+import java.util.Queue;
 
 public class gui extends JFrame {
     MusicPlayer myMusicPlayer;
     JLabel currentSongLabel;
     JProgressBar progressBar;
+
+    DefaultListModel<String> queueListModel;
+    JList<String> songQueueList;
+
+    DefaultListModel<String> previousQueueListModel;
+    JList<String> previousSongQueueList;
     public gui(MusicPlayer player) throws UnsupportedAudioFileException, LineUnavailableException, IOException {
         myMusicPlayer = player;
 
@@ -38,6 +45,22 @@ public class gui extends JFrame {
         currentSongLabel = new JLabel("No song playing.", JLabel.CENTER);
         currentSongLabel.setForeground(Color.white);
 
+        // song queue display
+        queueListModel = new DefaultListModel<>();
+        songQueueList = new JList<>(queueListModel);
+        songQueueList.setVisibleRowCount(5);
+        songQueueList.setFixedCellHeight(25);
+        songQueueList.setFixedCellWidth(300);
+        JScrollPane songQueueScrollPane = new JScrollPane(songQueueList);
+
+        // previous song queue display
+        previousQueueListModel = new DefaultListModel<>();
+        previousSongQueueList = new JList<>(previousQueueListModel);
+        previousSongQueueList.setVisibleRowCount(3);
+        previousSongQueueList.setFixedCellHeight(25);
+        previousSongQueueList.setFixedCellWidth(300);
+        JScrollPane previousQueueScrollPane = new JScrollPane(previousSongQueueList);
+
         // button to load songs from a folder
         JButton loadSongsButton = new JButton("Load Songs from Folder");
         loadSongsButton.addActionListener(new ActionListener() {
@@ -62,8 +85,6 @@ public class gui extends JFrame {
             }
         });
 
-
-
         // button to play next song
         ImageIcon playNextIcon = new ImageIcon(getClass().getResource("/icons/skipForward.png"));
 
@@ -83,7 +104,6 @@ public class gui extends JFrame {
         });
 
         // create play/pause button
-
         ImageIcon playIcon = new ImageIcon(getClass().getResource("/icons/playButton.png"));
         ImageIcon pauseIcon = new ImageIcon(getClass().getResource("/icons/pauseButton.png"));
 
@@ -119,41 +139,30 @@ public class gui extends JFrame {
             }
         });
 
-        // create stop button
-        final JButton stopButton = new JButton("Stop Song");
+        // create playPrevious song button
+        ImageIcon previousIcon = new ImageIcon(getClass().getResource("/icons/skipBack.png"));
+
+        final JButton playPreviousButton = new JButton();
+        playPreviousButton.setIcon(previousIcon);
 
         // when user clicks button a choice is made
-        stopButton.addActionListener(new ActionListener() {
+        playPreviousButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 try {
-                    myMusicPlayer.stop();
+                    myMusicPlayer.playPreviousSong();
                 } catch (IOException ex) {
                     throw new RuntimeException(ex);
                 } catch (LineUnavailableException ex) {
                     throw new RuntimeException(ex);
                 } catch (UnsupportedAudioFileException ex) {
                     throw new RuntimeException(ex);
+                } catch (InterruptedException ex) {
+                    throw new RuntimeException(ex);
                 }
             }
         });
 
-        // create check queue button
-        JButton checkQueueButton = new JButton("Check queue");
-
-        // create label to show next song
-        JLabel nextSongLabel = new JLabel("null");
-        nextSongLabel.setForeground(Color.WHITE);
-        nextSongLabel.setVisible(false);
-
-        // when user clicks checkQueueButton
-        checkQueueButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                nextSongLabel.setText(myMusicPlayer.viewNextSong().toString());
-                nextSongLabel.setVisible(true);
-            }
-        });
 
         // create volume slider settings
         final int volumeMin = -200;
@@ -190,17 +199,31 @@ public class gui extends JFrame {
 
         // add elements to panels
         topPanel.add(loadSongsButton, BorderLayout.NORTH);
-        topPanel.add(stopButton, BorderLayout.CENTER);
-        topPanel.add(nextSongLabel, BorderLayout.SOUTH);
+        topPanel.add(previousQueueScrollPane, BorderLayout.CENTER);
+        topPanel.add(songQueueScrollPane, BorderLayout.SOUTH);
         middlePanel.add(progressBar, BorderLayout.NORTH);
         middlePanel.add(currentSongLabel, BorderLayout.CENTER);
         middlePanel.add(volume, BorderLayout.SOUTH);
+        bottomPanel.add(playPreviousButton);
         bottomPanel.add(pausePlayButton);
         bottomPanel.add(playNextButton);
         bottomPanel.add(restartButton);
-        bottomPanel.add(checkQueueButton);
 
         setVisible(true);
+    }
+
+    public void updateSongQueue(Queue<song> songQueue){
+        queueListModel.clear();
+        for(song s : songQueue){
+            queueListModel.addElement(s.getTitle());
+        }
+    }
+
+    public void updatePreviousSongQueue(Queue<song> previousSongsQueue){
+        previousQueueListModel.clear();
+        for(song s : previousSongsQueue){
+            previousQueueListModel.addElement(s.getTitle());
+        }
     }
 
     public void setNowPlaying(String myLabel){
