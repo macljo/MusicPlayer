@@ -32,6 +32,20 @@ public class MusicPlayer {
     private String filePath;
     private gui GUI;
 
+    // create LineListener
+    private LineListener lineListener = event -> {
+        if(event.getType() == LineEvent.Type.STOP && status.equals("play")){
+            System.out.println("Playback completed");
+            try{
+                playNextSong();
+            } catch (LineUnavailableException e) {
+                throw new RuntimeException(e);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    };
+
     // initialize streams and clip
     public MusicPlayer()
             throws UnsupportedAudioFileException,
@@ -41,6 +55,9 @@ public class MusicPlayer {
 
         // initialize sonqQueue
         songQueue = new LinkedList<>();
+
+        // initialize status
+        status = "paused";
     }
 
     public void addGui(gui addedGui) {
@@ -56,6 +73,8 @@ public class MusicPlayer {
     public void playNextSong() throws LineUnavailableException, InterruptedException {
         // stop and close current clip if song is playing
         if(clip != null && clip.isRunning()){
+            // temporarily disable the listener
+            clip.removeLineListener(lineListener);
             clip.stop();
             clip.close();
         }
@@ -107,20 +126,10 @@ public class MusicPlayer {
             clip.open(audioStream);
 
             // Add a listener to detect when the clip reaches the end
-            clip.addLineListener(event -> {
-                if (!Objects.equals(status, "play")|| !Objects.equals(status, "paused") ) {
-                    if (event.getType() == LineEvent.Type.STOP) {
-                        System.out.println("Playback completed.");
-                        try {
-                            playNextSong();
-                        } catch (LineUnavailableException e) {
-                            throw new RuntimeException(e);
-                        } catch (InterruptedException e) {
-                            throw new RuntimeException(e);
-                        }
-                    }
-                }
-            });
+            clip.addLineListener(lineListener);
+
+            // Ensure clip length is initialized properly
+            clipLength = clip.getMicrosecondLength();
 
             GUI.setNowPlaying(song.getTitle() + "-" + song.getArtist());
             //GUI.setNowPlaying(song.toString());
@@ -134,15 +143,22 @@ public class MusicPlayer {
 
     // play the audio
     public void play() {
-        // set clip volume
-        musicGainControl = (FloatControl) clip.getControl(FloatControl.Type.MASTER_GAIN);
-        musicGainControl.setValue(currentMusicVolume);
+        if(status.equals("paused")){
+            clip.addLineListener(lineListener);
+            clip.setMicrosecondPosition(clip.getMicrosecondPosition());
+            clip.start();
+        }
+        else{
+            // set clip volume
+            musicGainControl = (FloatControl) clip.getControl(FloatControl.Type.MASTER_GAIN);
+            musicGainControl.setValue(currentMusicVolume);
 
-        // get length of the clip
-        clipLength = clip.getMicrosecondLength();
+            // get length of the clip
+            clipLength = clip.getMicrosecondLength();
 
-        // play clip
-        clip.start();
+            // play clip
+            clip.start();
+        }
 
         // start a timer to update progress via progressListener
         timer = new Timer(100, e -> updateProgress());
@@ -158,6 +174,8 @@ public class MusicPlayer {
             System.out.println("audio is already paused");
             return;
         }
+        // Temporarily remove the listener to prevent it from catching STOP event
+        clip.removeLineListener(lineListener);
         clip.stop();
         status = "paused";
     }
@@ -165,6 +183,9 @@ public class MusicPlayer {
     // restart the audio
     public void restart()
             throws IOException, LineUnavailableException, UnsupportedAudioFileException {
+        // Temporarily remove the listener to prevent STOP event
+        clip.removeLineListener(lineListener);
+
         clip.stop();
         clip.close();
         resetAudioStream();
@@ -202,10 +223,15 @@ public class MusicPlayer {
     }
 
     public void updateProgress(){
-        long currentPos = clip.getMicrosecondPosition();
-        int progress = (int) ((currentPos * 100) / clipLength);
+        if(clipLength > 0){
+            long currentPos = clip.getMicrosecondPosition();
+            int progress = (int) ((currentPos * 100) / clipLength);
 
-        GUI.progressBar.setValue(progress);
+            GUI.progressBar.setValue(progress);
+        } else{
+            GUI.progressBar.setValue(0);
+        }
+
     }
 
     // reset audio stream

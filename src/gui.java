@@ -93,7 +93,7 @@ public class gui extends JFrame {
             if (myMusicPlayer.status == "play") {
                 myMusicPlayer.pause(); // Pause the audio
                 pausePlayButton.setIcon(playIcon);
-            } else {
+            } else if (myMusicPlayer.status.equals("paused")){
                 myMusicPlayer.play(); // Play or resume the audio
                 pausePlayButton.setIcon(pauseIcon);
             }
