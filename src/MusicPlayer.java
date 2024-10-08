@@ -11,6 +11,8 @@ public class MusicPlayer {
     // create songQueue
     private static Queue<song> songQueue;
 
+    private static UserSettings userSettings;
+
     // create previousSongs and limit the number of songs in previousSongs
     private LinkedList<song> previousSongs;
     private static final int maxSongs = 20;
@@ -68,10 +70,25 @@ public class MusicPlayer {
 
         // initialize status
         status = "paused";
+
+        // set default volume
+        userSettings = new UserSettings();
+        currentMusicVolume = userSettings.getLastVolume();
     }
 
     public void addGui(gui addedGui) {
         GUI = addedGui;
+    }
+
+    // load previous settings
+    public void loadPreviousSettings(String lastFolder, float lastVolume) throws LineUnavailableException, InterruptedException {
+        if(!lastFolder.isEmpty()){
+            File folder = new File(lastFolder);
+            if(folder.exists() && folder.isDirectory()){
+                loadSongsFromFolder(folder);
+            }
+        }
+        changeVolume(lastVolume);
     }
 
     // add a song to the queue
@@ -200,6 +217,11 @@ public class MusicPlayer {
             // open audio clip and load samples from audioinputstream
             clip.open(audioStream);
 
+            // initialize the volume control
+            musicGainControl = (FloatControl) clip.getControl(FloatControl.Type.MASTER_GAIN);
+            // set initial volume
+            musicGainControl.setValue(currentMusicVolume);
+
             // Add a listener to detect when the clip reaches the end
             clip.addLineListener(lineListener);
 
@@ -292,9 +314,17 @@ public class MusicPlayer {
 
     // change volume
     public void changeVolume(float newVolume) throws IllegalArgumentException {
-        musicGainControl.setValue(newVolume);
-        currentMusicVolume = newVolume;
-        System.out.println("MP volume changed: " + newVolume);
+        if(musicGainControl != null){
+            musicGainControl.setValue(newVolume);
+            currentMusicVolume = newVolume;
+            System.out.println("MP volume changed: " + newVolume);
+        }
+        else{
+            System.out.println("Volume control not available");
+        }
+
+        // save volume settings when it is changed
+        userSettings.setLastVolume(newVolume);
     }
 
     public void updateProgress(){

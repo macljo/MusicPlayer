@@ -12,6 +12,7 @@ import java.util.Queue;
 
 public class gui extends JFrame {
     MusicPlayer myMusicPlayer;
+    static UserSettings userSettings;
     JLabel currentSongLabel;
     JProgressBar progressBar;
 
@@ -22,6 +23,7 @@ public class gui extends JFrame {
     JList<String> previousSongQueueList;
     public gui(MusicPlayer player) throws UnsupportedAudioFileException, LineUnavailableException, IOException {
         myMusicPlayer = player;
+        userSettings = new UserSettings();
 
         // create window
         setSize(600, 1000);
@@ -67,13 +69,16 @@ public class gui extends JFrame {
             @Override
             public void actionPerformed(ActionEvent e) {
                 JFileChooser fileChooser = new JFileChooser();
-                fileChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY); // only allow folder selection
+                fileChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
                 int result = fileChooser.showOpenDialog(middlePanel);
 
                 if (result == JFileChooser.APPROVE_OPTION) {
                     File folder = fileChooser.getSelectedFile();
+                    userSettings.setLastFolder(folder.getAbsolutePath());
                     try {
                         myMusicPlayer.loadSongsFromFolder(folder);
+                        // save the selected folder
+                        userSettings.saveSettings();
                     } catch (LineUnavailableException ex) {
                         throw new RuntimeException(ex);
                     } catch (InterruptedException ex) {
@@ -210,6 +215,18 @@ public class gui extends JFrame {
         bottomPanel.add(restartButton);
 
         setVisible(true);
+    }
+
+    public void selectFolder(){
+        JFileChooser fileChooser = new JFileChooser();
+        fileChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+        int result = fileChooser.showOpenDialog(null);
+
+        if(result == JFileChooser.APPROVE_OPTION){
+            File selectedFolder = fileChooser.getSelectedFile();
+
+            userSettings.setLastFolder(selectedFolder.getAbsolutePath());
+        }
     }
 
     public void updateSongQueue(Queue<song> songQueue){
